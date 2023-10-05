@@ -1,0 +1,196 @@
+﻿@model MiniProjectDHL.Models.MovementModel
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/css/bootstrap-datepicker.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px 0;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+        }
+
+            .navbar-brand img {
+                width: 150px;
+                height: 75px;
+                margin-right: 10px;
+            }
+
+        /* Form Styles */
+        h2 {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background-color: #FFCC00;
+            border-color: #007bff;
+            color: #333;
+        }
+
+            .btn-primary:hover {
+                background-color: #D40511;
+                border-color: #0056b3;
+            }
+
+        /* Validation Error Message Styles */
+        .validation-summary-errors {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+
+        .field-validation-error {
+            color: #dc3545;
+        }
+
+        /* Datepicker Styles */
+        .datepicker {
+            width: 100%;
+        }
+
+        /* Countdown Timer Styles */
+        #countdownTimer {
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+    
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">
+            <img src="@Url.Content("logo.png")" alt="Company Logo" width="150" height="75" />
+            DHL Movement Project
+        </a>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>Movement Form</h2>
+
+        @using (Html.BeginForm("Execute", "Movement", FormMethod.Post, new { id = "movementForm" }))
+        {
+            @Html.ValidationSummary(true)
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.OriginStation)
+                @Html.TextBoxFor(model => model.OriginStation, new { @class = "form-control", required = "required", pattern = "[A-Z]{3}", title = "Please enter 3 capital letters" })
+                @Html.ValidationMessageFor(model => model.OriginStation)
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.DestinationStation)
+                @Html.TextBoxFor(model => model.DestinationStation, new { @class = "form-control", required = "required", pattern = "[A-Z]{3}", title = "Please enter 3 capital letters" })
+                @Html.ValidationMessageFor(model => model.DestinationStation)
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.MovementName)
+                @Html.TextBoxFor(model => model.MovementName, new { @class = "form-control", required = "required", pattern = "^[a-zA-Z0-9]{5,8}$", title = "Please enter 5 to 8 alphanumeric characters", id = "movementName" })
+                @Html.ValidationMessageFor(model => model.MovementName)
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.MovementDate)
+                @Html.TextBoxFor(model => model.MovementDate, new { @class = "form-control datepicker", required = "required", pattern = "^\\d{4}-\\d{2}-\\d{2}$", title = "Please enter a valid date in YYYY-MM-DD format", id = "movementDate" })
+                @Html.ValidationMessageFor(model => model.MovementDate)
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="executeButton">Execute</button>
+            <div id="countdownTimer"></div>
+        }
+    </div>
+
+    <script>
+        $(function () {
+            $("#datepicker").datepicker({
+                dateFormat: "yy-mm-dd" // Set the desired date format
+            });
+
+            var cooldownDuration = 10; // Set the cooldown duration in seconds
+            var countdown = cooldownDuration;
+            var timerInterval;
+
+            // Function to update the countdown timer
+            function updateCountdown() {
+                if (countdown > 0) {
+                    $('#executeButton').prop('disabled', true);
+                    $('#countdownTimer').text('Cooldown: ' + countdown + ' seconds');
+                    countdown--;
+                } else {
+                    $('#executeButton').prop('disabled', false);
+                    $('#countdownTimer').text('');
+                    clearInterval(timerInterval);
+                }
+            }
+
+            // Initial call to update the countdown
+            updateCountdown();
+
+            $('#executeButton').click(function () {
+                $('#executeButton').prop('disabled', true);
+
+                // Start the countdown timer
+                countdown = cooldownDuration;
+                timerInterval = setInterval(updateCountdown, 1000); // Update every 1 second
+
+                // Simulate a backend delay
+                setTimeout(function () {
+                    $('#executeButton').prop('disabled', false);
+                    clearInterval(timerInterval); // Stop the timer when cooldown is over
+                }, cooldownDuration * 1000); // Convert seconds to milliseconds
+            });
+        });
+    </script>
+
+</body>
+</html>
